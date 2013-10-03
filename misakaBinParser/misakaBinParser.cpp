@@ -2,7 +2,6 @@
 //
 
 #include "stdafx.h"
-#include <cassert>
 
 const int file_table_offset = 22;
 const int file_table_entry_width = 4;
@@ -47,8 +46,6 @@ std::vector<short> getFiles(char *buffer){
 	return vec;
 }
 
-
-
 //takes a shtxps file and writes it into an uncompressed PNM file
 void writePNM(std::vector<char> buffer, std::string filename){
 	std::ofstream outtest(filename, std::ofstream::out | std::ofstream::binary);
@@ -73,12 +70,14 @@ void writePNM(std::vector<char> buffer, std::string filename){
 	outtest.close();
 }
 
+//copy from source[startcpy] #amt elements into target[ins_pos]
 template <typename T>void copy_data(std::vector<T> &target, std::vector<T> &source, int ins_pos, int startcpy, int amt){
 	auto start = source.cbegin() + startcpy;
 	auto end = source.cbegin() + startcpy + amt ;
 	target.insert(target.begin() + ins_pos, start, end);
 }
 
+//decode the custom RLE CONTAINS ERRORS ATM
 std::vector<char> decodeRLE(std::vector<char> buffer)
 {
 	const char BACK_FLAG = 0x80;
@@ -159,42 +158,41 @@ std::vector<char> decodeRLE(std::vector<char> buffer)
 	return result;
 }
 
-template <typename T> void insertExtend(std::vector<T> &vec, size_t pos, T element){
-	if (vec.size() < pos){
-		vec.resize(pos);
+//helper struct to store state of the MIPS code translation
+struct MipsCpy{
+	std::vector<char> *container = nullptr;
+	std::vector<char> *container2 = nullptr;
+
+	long lbu(long adr){
+		if (adr & 0x40000000){
+			unsigned char value = reinterpret_cast<unsigned char &>((*container)[adr & 0x0FFFFFFF]);
+			return value;
+		}
+		//return *(reinterpret_cast<unsigned char *>(adr));
+		return  reinterpret_cast<unsigned char &>((*container2)[adr]);
 	}
 
-	vec.insert(vec.begin()+pos,element);
-}
-std::vector<char> *container = nullptr;
-std::vector<char> *container2 = nullptr;
-
-long lbu(long adr){
-	if (adr & 0x40000000){
-		unsigned char value = reinterpret_cast<unsigned char &>((*container)[adr&0x0FFFFFFF]);
-		return value;
+	void sb(long toStore, long location){
+		location = location & 0x0FFFFFFF;
+		if (location >= container->size()){
+			container->resize(location + 1);
+		}
+		//unsigned char *loc = reinterpret_cast<unsigned char *>(location);
+		//*loc = toStore & 0xFF;
+		unsigned char byte = (toStore & 0xFF);
+		(*container)[location] = reinterpret_cast<char &>(byte);
 	}
-	//return *(reinterpret_cast<unsigned char *>(adr));
-	return  reinterpret_cast<unsigned char &>((*container2)[adr]);
-} 
 
-void sb(long toStore, long location){
-	location = location & 0x0FFFFFFF;
-	if (location >= container->size()){
-		container->resize(location+1);
+	void sw(long toStore, long location){
+		unsigned int *loc = reinterpret_cast<unsigned int *>(location);
+		*loc = toStore & 0xFFFFFFFF;
 	}
-	//unsigned char *loc = reinterpret_cast<unsigned char *>(location);
-	//*loc = toStore & 0xFF;
-	unsigned char byte = (toStore & 0xFF);
-	(*container)[location] = reinterpret_cast<char &>(byte);
-}
+};
 
-void sw(long toStore, long location){
-	unsigned int *loc = reinterpret_cast<unsigned int *>(location);
-	*loc = toStore & 0xFFFFFFFF;
-}
-
+//decode the custom RLE, one to one translation of the MIPS code
 std::vector<char> decodeRLE2(std::vector<char> &buff){
+	MipsCpy mips;
+	
 	std::vector<char> result;
 	//result.resize(buff.size()*20);
 
@@ -203,13 +201,13 @@ std::vector<char> decodeRLE2(std::vector<char> &buff){
 
 	a0 = 0;//reinterpret_cast<long>(&(buff[0]));//position in src
 	a1 = 0x40000000;//reinterpret_cast<long>(&(result[0]));//position in target
-	container = &result;
-	container2 = &buff;
+	mips.container = &result;
+	mips.container2 = &buff;
 
 	//		move	a2,a0
 	a2 = a0;
 //		lbu	a0,0x0(a2)
-	a0 = lbu(a2);
+	a0 = mips.lbu(a2);
 //		move	a3,a1
 	a3 = a1;
 //		li	t2,0x60
@@ -238,7 +236,7 @@ jmp7:
 //		addiu	v0,v0,0x4
 	v0 = v0 + 0x4; if (cond) goto jmp4;
 //		lbu	v1,0x1(a2)
-	v1 = lbu(a2+1);
+	v1 = mips.lbu(a2+1);
 //		andi	v0,a0,0xF
 	v0 = a0 & 0xF;
 //		sll	v0,v0,0x8
@@ -251,7 +249,7 @@ jmp7:
 	v0 = v1 + 0x4;
 //jmp4:		lbu	v1,0x0(t0)
 jmp4:
-	v1 = lbu(t0);
+	v1 = mips.lbu(t0);
 //		blez	v0,jmp5
 	cond = (v0 == 0 );
 //		addiu	t0,t0,0x1
@@ -261,14 +259,14 @@ jmp4:
 //		addu	v0,v0,a3
 	v0 = v0 + a3;
 //		sb	v1,0x0(a0)
-	sb(v1, a0);
+	mips.sb(v1, a0);
 //jmp6:		addiu	a0,a0,0x1
 jmp6:
 	a0 = a0 + 1;
 //		bnel	v0,a0,jmp6
 	cond = (v0 != a0);
 //		sb	v1,0x0(a0)
-	sb(v1, a0); if (cond) goto jmp6;
+	mips.sb(v1, a0); if (cond) goto jmp6;
 //		move	a3,a0
 	a3 = a0;
 //jmp5:		move	a2,t0
@@ -276,7 +274,7 @@ jmp5:
 	a2 = t0;
 //jmp10:		lbu	a0,0x0(a2)
 jmp10:
-	a0 = lbu(a2);
+	a0 = mips.lbu(a2);
 //		bne	zero,a0,jmp7
 	cond = (a0 != 0);
 //		addiu	t0,a2,0x1
@@ -305,7 +303,7 @@ jmp3:
 //		andi	v1,a0,0x1F
 	v1 = a0 & 0x1F; if (cond) goto jmp8;
 //		lbu	v1,0x1(a2)
-	v1 = lbu(a2+1);
+	v1 = mips.lbu(a2+1);
 //		andi	v0,a0,0x1F
 	v0 = a0 & 0x1F;
 //		sll	v0,v0,0x8
@@ -323,9 +321,9 @@ jmp8:
 	t1 = v1 + a3; if (cond) goto jmp5;
 //jmp9:		lbu	v0,0x0(t0)
 jmp9:
-	v0 = lbu(t0);
+	v0 = mips.lbu(t0);
 //		sb	v0,0x0(a2)
-	sb(v0,a2);
+	mips.sb(v0,a2);
 //		addiu	a2,a2,0x1
 	a2 = a2 + 1;
 //		bne	a2,t1,jmp9
@@ -340,7 +338,7 @@ jmp9:
 	a2 = t0; if (cond) goto jmp10;
 //jmp2:		lbu	v0,0x1(a2)
 jmp2:
-	v0 = lbu(a2+1);
+	v0 = mips.lbu(a2+1);
 //		andi	v1,a0,0x1F
 	v1 = a0 & 0x1F;
 //		sll	v1,v1,0x8
@@ -363,9 +361,9 @@ jmp2:
 	v1 = v1 + a3;
 //jmp12:		lbu	v0,0x0(a2)
 jmp12:
-	v0 = lbu(a2);
+	v0 = mips.lbu(a2);
 //		sb	v0,0x0(a0)
-	sb(v0,a0);
+	mips.sb(v0,a0);
 //		addiu	a0,a0,0x1
 	a0 = a0 + 1;
 //		bne	v1,a0,jmp12:
@@ -376,7 +374,7 @@ jmp12:
 	a3 = a0;
 //jmp11:		lbu	v1,0x0(t0)
 jmp11:
-	v1 = lbu(t0);
+	v1 = mips.lbu(t0);
 //		andi	v0,v1,0xE0
 	v0 = v1 & 0xE0;
 //		bne	t2,v0,jmp5
@@ -393,11 +391,11 @@ jmp11:
 	a0 = a2 + v0;
 //jmp13:		lbu	v0,0x0(v1)
 jmp13:
-	v0 = lbu(v1);
+	v0 = mips.lbu(v1);
 //		addiu	v1,v1,0x1
 	v1 = v1 + 1;
 //		sb	v0,0x0(a3)
-	sb(v0,a3);
+	mips.sb(v0,a3);
 //		bne	a0,v1,jmp13
 	cond = (a0 !=v1);
 //		addiu	a3,a3,0x1
@@ -408,6 +406,65 @@ jmp13:
 	a2 = v1; if (cond) goto jmp11;
 
 	return result;
+}
+
+//extracts all files into the CWD 
+void extractAllFiles(std::vector<short> &index, std::vector<char> &buffer, bool uncompress_images = true){
+	int prev = 0;
+	for (auto i : index){
+		auto pos = std::lower_bound(index.begin(), index.end(), i);
+		pos++;
+		int size = (*pos - i) * block_size;
+		using of = std::ofstream;
+		//fout.write(&buffer[i*block_size], size);
+		std::vector<char> file_compressed(buffer.begin() + i*block_size, buffer.begin() + i*block_size + size + 1);
+		std::vector<char> file_uncompressed = decodeRLE2(file_compressed);
+
+		std::string extension(&file_uncompressed[0], &file_uncompressed[3]);
+		std::stringstream name;
+		name << i << "." << extension;
+		std::ofstream fout(name.str(), of::binary | of::out);
+
+		fout.write(&file_uncompressed[0], file_uncompressed.size());
+		fout.flush();
+		fout.close();
+
+		if (extension.compare("SHT") == 0){
+			name << ".ppm";
+			writePNM(file_uncompressed, name.str());
+		}
+	}
+}
+
+//finds and prints out potential positions of normalized coordinate triplets
+void findNormals(std::vector<char> &buffer){
+	const float epsilonf = 0.01f;
+	float onef = 1.0f;
+
+	uint16_t epsilon = half_from_float(reinterpret_cast<const uint32_t &>(epsilonf));
+	uint16_t one = half_from_float(reinterpret_cast<uint32_t &>(onef));
+
+	std::cout << "starting search for half-float triplets" << std::endl;
+
+	int end = buffer.size() / 2;
+	uint16_t *buff = reinterpret_cast<uint16_t *>(&buffer[0]);
+	uint16_t prev2;
+	uint16_t prev;
+	uint16_t curr;
+	for (int i = 0; i < end; i++){
+		prev2 = prev;
+		prev = curr;
+		curr = *(buff++);
+
+		uint16_t norm = half_add(prev2, prev);
+		norm = half_add(norm, curr);
+
+		uint16_t dist = half_sub(norm,one);
+		uint32_t distf = half_to_float(dist);
+		if (std::abs(reinterpret_cast<float &>(distf)) < epsilonf){
+			std::cout << "possible cnadidate: " << i*2  << " hex:"  << std::ostream::hex << i*2 << std::endl;
+		}
+	}
 }
 
 int _tmain(int argc, _TCHAR* argv[])
@@ -439,36 +496,15 @@ int _tmain(int argc, _TCHAR* argv[])
 		,0x604E
 	};
 
-//	for (auto i : files){
-//		auto pos = std::lower_bound(index.begin(),index.end(),i);
-	int prev = 0;
-	for (auto i : index){
-		auto pos = std::lower_bound(index.begin(), index.end(), i);
-		pos++;
-		int size = (*pos - i) * block_size;
-		using of = std::ofstream;
-		//fout.write(&buffer[i*block_size], size);
-		std::vector<char> file_compressed(buffer.begin() + i*block_size, buffer.begin() + i*block_size + size+1);
-		std::vector<char> file_uncompressed = decodeRLE2(file_compressed);
-		
-		std::string extension(&file_uncompressed[0], &file_uncompressed[3]);
-		std::stringstream name;
-		name << i << "." << extension;
-		std::ofstream fout(name.str(), of::binary | of::out);
+	//extractAllFiles(index,buffer);
 
-		fout.write(&file_uncompressed[0],file_uncompressed.size());
-		fout.flush();
-		fout.close();
-
-		if (extension.compare("SHT") == 0){
-			name << ".ppm";
-			writePNM(file_uncompressed, name.str());
-		}
-	}
-	//writePNM(buffer, 5);
+	auto pscfile = readFullFile("22046.PSC");
+	findNormals(pscfile);
 
 	int pause;
-	//std::cin >> pause;
+	std::cin >> pause;
+
+
 	return 0;
 }
 

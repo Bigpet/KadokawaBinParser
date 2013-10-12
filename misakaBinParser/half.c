@@ -44,97 +44,99 @@
 #include "half.h"
 
 // Load immediate
-static inline uint32_t _uint32_li( uint32_t a )
+static __inline uint32_t _uint32_li( uint32_t a )
 {
   return (a);
 }
 
 // Decrement
-static inline uint32_t _uint32_dec( uint32_t a )
+static __inline uint32_t _uint32_dec( uint32_t a )
 {
   return (a - 1);
 }
 
 // Increment
-static inline uint32_t _uint32_inc( uint32_t a )
+static __inline uint32_t _uint32_inc( uint32_t a )
 {
   return (a + 1);
 }
 
 // Complement
-static inline uint32_t _uint32_not( uint32_t a )
+static __inline uint32_t _uint32_not( uint32_t a )
 {
   return (~a);
 }
 
 // Negate
-static inline uint32_t _uint32_neg( uint32_t a )
+static __inline uint32_t _uint32_neg( uint32_t a )
 {
+#pragma warning( disable : 4146 )
   return (-a);
+#pragma warning( default : 4146 )
 }
 
 // Extend sign
-static inline uint32_t _uint32_ext( uint32_t a )
+static __inline uint32_t _uint32_ext( uint32_t a )
 {
   return (((int32_t)a)>>31);
 }
 
 // And
-static inline uint32_t _uint32_and( uint32_t a, uint32_t b )
+static __inline uint32_t _uint32_and( uint32_t a, uint32_t b )
 {
   return (a & b);
 }
 
 // Exclusive Or
-static inline uint32_t _uint32_xor( uint32_t a, uint32_t b )
+static __inline uint32_t _uint32_xor( uint32_t a, uint32_t b )
 {
   return (a ^ b);
 }
 
 // And with Complement
-static inline uint32_t _uint32_andc( uint32_t a, uint32_t b )
+static __inline uint32_t _uint32_andc( uint32_t a, uint32_t b )
 {
   return (a & ~b);
 }
 
 // Or
-static inline uint32_t _uint32_or( uint32_t a, uint32_t b )
+static __inline uint32_t _uint32_or( uint32_t a, uint32_t b )
 {
   return (a | b);
 }
 
 // Shift Right Logical
-static inline uint32_t _uint32_srl( uint32_t a, int sa )
+static __inline uint32_t _uint32_srl( uint32_t a, int sa )
 {
   return (a >> sa);
 }
 
 // Shift Left Logical
-static inline uint32_t _uint32_sll( uint32_t a, int sa )
+static __inline uint32_t _uint32_sll( uint32_t a, int sa )
 {
   return (a << sa);
 }
 
 // Add
-static inline uint32_t _uint32_add( uint32_t a, uint32_t b )
+static __inline uint32_t _uint32_add( uint32_t a, uint32_t b )
 {
   return (a + b);
 }
 
 // Subtract
-static inline uint32_t _uint32_sub( uint32_t a, uint32_t b )
+static __inline uint32_t _uint32_sub( uint32_t a, uint32_t b )
 {
   return (a - b);
 }
 
 // Multiply
-static inline uint32_t _uint32_mul( uint32_t a, uint32_t b )
+static __inline uint32_t _uint32_mul( uint32_t a, uint32_t b )
 {
   return (a * b);
 }
 
 // Select on Sign bit
-static inline uint32_t _uint32_sels( uint32_t test, uint32_t a, uint32_t b )
+static __inline uint32_t _uint32_sels( uint32_t test, uint32_t a, uint32_t b )
 {
   const uint32_t mask   = _uint32_ext( test );
   const uint32_t sel_a  = _uint32_and(  a,     mask  );
@@ -145,7 +147,7 @@ static inline uint32_t _uint32_sels( uint32_t test, uint32_t a, uint32_t b )
 }
 
 // Select Bits on mask
-static inline uint32_t _uint32_selb( uint32_t mask, uint32_t a, uint32_t b )
+static __inline uint32_t _uint32_selb( uint32_t mask, uint32_t a, uint32_t b )
 {
   const uint32_t sel_a  = _uint32_and(  a,     mask  );
   const uint32_t sel_b  = _uint32_andc( b,     mask  );
@@ -155,104 +157,104 @@ static inline uint32_t _uint32_selb( uint32_t mask, uint32_t a, uint32_t b )
 }
 
 // Load Immediate
-static inline uint16_t _uint16_li( uint16_t a )
+static __inline uint16_t _uint16_li( uint16_t a )
 {
   return (a);
 }
 
 // Extend sign
-static inline uint16_t _uint16_ext( uint16_t a )
+static __inline uint16_t _uint16_ext( uint16_t a )
 {
   return (((int16_t)a)>>15);
 }
 
 // Negate
-static inline uint16_t _uint16_neg( uint16_t a )
+static __inline uint16_t _uint16_neg( uint16_t a )
 {
   return (-a);
 }
 
 // Complement
-static inline uint16_t _uint16_not( uint16_t a )
+static __inline uint16_t _uint16_not( uint16_t a )
 {
   return (~a);
 }
 
 // Decrement
-static inline uint16_t _uint16_dec( uint16_t a )
+static __inline uint16_t _uint16_dec( uint16_t a )
 {
   return (a - 1);
 }
 
 // Shift Left Logical
-static inline uint16_t _uint16_sll( uint16_t a, int sa )
+static __inline uint16_t _uint16_sll( uint16_t a, int sa )
 {
   return (a << sa);
 }
 
 // Shift Right Logical
-static inline uint16_t _uint16_srl( uint16_t a, int sa )
+static __inline uint16_t _uint16_srl( uint16_t a, int sa )
 {
   return (a >> sa);
 }
 
 // Add
-static inline uint16_t _uint16_add( uint16_t a, uint16_t b )
+static __inline uint16_t _uint16_add( uint16_t a, uint16_t b )
 {
   return (a + b);
 }
 
 // Subtract
-static inline uint16_t _uint16_sub( uint16_t a, uint16_t b )
+static __inline uint16_t _uint16_sub( uint16_t a, uint16_t b )
 {
   return (a - b);
 }
 
 // And
-static inline uint16_t _uint16_and( uint16_t a, uint16_t b )
+static __inline uint16_t _uint16_and( uint16_t a, uint16_t b )
 {
   return (a & b);
 }
 
 // Or
-static inline uint16_t _uint16_or( uint16_t a, uint16_t b )
+static __inline uint16_t _uint16_or( uint16_t a, uint16_t b )
 {
   return (a | b);
 }
 
 // Exclusive Or
-static inline uint16_t _uint16_xor( uint16_t a, uint16_t b )
+static __inline uint16_t _uint16_xor( uint16_t a, uint16_t b )
 {
   return (a ^ b);
 }
 
 // And with Complement
-static inline uint16_t _uint16_andc( uint16_t a, uint16_t b )
+static __inline uint16_t _uint16_andc( uint16_t a, uint16_t b )
 {
   return (a & ~b);
 }
 
 // And then Shift Right Logical
-static inline uint16_t _uint16_andsrl( uint16_t a, uint16_t b, int sa )
+static __inline uint16_t _uint16_andsrl( uint16_t a, uint16_t b, int sa )
 {
   return ((a & b) >> sa);
 }
 
 // Shift Right Logical then Mask
-static inline uint16_t _uint16_srlm( uint16_t a, int sa, uint16_t mask )
+static __inline uint16_t _uint16_srlm( uint16_t a, int sa, uint16_t mask )
 {
   return ((a >> sa) & mask);
 }
 
 // Add then Mask
-static inline uint16_t _uint16_addm( uint16_t a, uint16_t b, uint16_t mask )
+static __inline uint16_t _uint16_addm( uint16_t a, uint16_t b, uint16_t mask )
 {
   return ((a + b) & mask);
 }
 
 
 // Select on Sign bit
-static inline uint16_t _uint16_sels( uint16_t test, uint16_t a, uint16_t b )
+static __inline uint16_t _uint16_sels( uint16_t test, uint16_t a, uint16_t b )
 {
   const uint16_t mask   = _uint16_ext( test );
   const uint16_t sel_a  = _uint16_and(  a,     mask  );
@@ -263,7 +265,7 @@ static inline uint16_t _uint16_sels( uint16_t test, uint16_t a, uint16_t b )
 }
 
 // Count Leading Zeros
-static inline uint32_t _uint32_cntlz( uint32_t x )
+static __inline uint32_t _uint32_cntlz( uint32_t x )
 {
 #ifdef __GNUC__
   /* NOTE: __builtin_clz is undefined for x == 0 */
@@ -305,7 +307,7 @@ static inline uint32_t _uint32_cntlz( uint32_t x )
 }
 
 // Count Leading Zeros
-static inline uint16_t _uint16_cntlz( uint16_t x )
+static __inline uint16_t _uint16_cntlz( uint16_t x )
 {
 #ifdef __GNUC__
   uint16_t nlz32 = (uint16_t)_uint32_cntlz( (uint32_t)x );

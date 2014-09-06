@@ -2,9 +2,8 @@
 
 #include "half.h"
 
-using namespace MisakaTool;
 //takes a shtxps file and writes it into an uncompressed PNM file
-void writePNM(std::vector<char> buffer, std::string filename){
+void MisakaTool::writePNM(std::vector<char> buffer, std::string filename){
 	std::ofstream outtest(filename, std::ofstream::out | std::ofstream::binary);
 
 	short colors = reinterpret_cast<short &>(buffer[6]);
@@ -28,7 +27,7 @@ void writePNM(std::vector<char> buffer, std::string filename){
 }
 
 //finds and prints out potential positions of normalized coordinate triplets
-void findNormals(std::vector<char> &buffer){
+void MisakaTool::findNormals(std::vector<char> &buffer){
 	const float epsilonf = 0.01f;
 	float onef = 1.0f;
 

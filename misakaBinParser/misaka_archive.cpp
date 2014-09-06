@@ -3,7 +3,7 @@
 using namespace MisakaTool;
 
 //extracts all files into the CWD 
-void MisakaArchive::extractAllFiles(std::vector<short> &index, std::vector<char> &buffer, bool uncompress_images = true){
+void MisakaArchive::extractAllFiles(std::vector<short> &index, std::vector<char> &buffer, bool uncompress_images ){
 	int prev = 0;
 	for (auto i : index){
 		auto pos = std::lower_bound(index.begin(), index.end(), i);
@@ -69,12 +69,7 @@ std::vector<short> MisakaArchive::getFiles(char *buffer){
 }
 
 
-//copy from source[startcpy] #amt elements into target[ins_pos]
-template <typename T>void MisakaArchive::copy_data(std::vector<T> &target, std::vector<T> &source, int ins_pos, int startcpy, int amt){
-	auto start = source.cbegin() + startcpy;
-	auto end = source.cbegin() + startcpy + amt;
-	target.insert(target.begin() + ins_pos, start, end);
-}
+
 
 //decode the custom RLE CONTAINS ERRORS ATM
 std::vector<char> MisakaArchive::decodeRLE(std::vector<char> buffer)

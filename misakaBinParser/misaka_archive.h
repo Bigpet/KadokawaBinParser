@@ -4,9 +4,9 @@ namespace MisakaTool{
 
 
 	struct MisakaArchive{
-		const int file_table_offset = 22;
-		const int file_table_entry_width = 4;
-		const int block_size = 2048;
+		static const int file_table_offset = 22;
+		static const int file_table_entry_width = 4;
+		static const int block_size = 2048;
 
 
 		//reads the full file into a vector<char>

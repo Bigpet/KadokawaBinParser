@@ -1,7 +1,6 @@
 #pragma once
 
-#include <vector>
-#include <string>
+#include "stdafx.h"
 
 namespace MisakaTool{
 //takes a shtxps file and writes it into an uncompressed PNM file

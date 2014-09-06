@@ -3,6 +3,9 @@
 
 #include "stdafx.h"
 
+#include <algorithm>
+
+#include<iostream>
 
 
 
@@ -35,13 +38,14 @@ int _tmain(int argc, _TCHAR* argv[])
 		,0x604E
 	};
 
-	//MisakaTool::MisakaArchive::extractAllFiles(index,buffer);
+	MisakaTool::MisakaArchive::extractAllFiles(index,buffer);
 
 	//auto pscfile = MisakaTool::MisakaArchive::readFullFile::readFullFile("22046.PSC");
 	//MisakaTool::findNormals(pscfile);
 
+
 	int pause;
-	//std::cin >> pause;
+	std::cin >> pause;
 
 
 	return 0;

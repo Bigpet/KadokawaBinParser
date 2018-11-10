@@ -1,7 +1,8 @@
-KatagawaBinParser
+KadokawaBinParser
 =================
 
-Some code related to some reverse engineering I did of some Katagawa Games PSP game files
+Some code related to some reverse engineering I did of some Kadokawa Games PSP game files.
+I used it primarily for getting some files from Toaru Kagaku no Railgun.
 
 All of this code is very unorganized and I created this repository pretty much just to back up the code
 
